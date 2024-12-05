@@ -1,9 +1,18 @@
 #include "../include/utils/read_line.h"
+
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
 
+/**
+ * @brief Bir satır okur ve döndürür.
+ * @return Okunan satır.
+ *
+ * @warning Bu fonksiyon, bellek yönetimi için malloc ve realloc fonksiyonlarını
+ * kullanır. Bu nedenle, kullanılan belleği serbest bırakmak için free
+ * fonksiyonunu kullanmayı unutmayın.
+ */
 char* read_line(void)
 {
     int   bufsize  = BUFFER_SIZE;

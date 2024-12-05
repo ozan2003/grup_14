@@ -2,6 +2,16 @@
 
 #include <string.h>
 
+/**
+ * @brief String'i boşluklara göre ayırır ve döndürür.
+ * @param line Ayırılacak string.
+ * @return Boşluklara göre ayrılmış string dizisi.
+ *
+ * @warning Bu fonksiyon, bellek yönetimi için malloc ve realloc fonksiyonlarını
+ * kullanır. Bu nedenle, kullanılan belleği serbest bırakmak için free
+ * fonksiyonunu kullanmayı unutmayın.
+ */
+
 char** split_whitespace(char* line)
 {
     int    bufsize = TOKEN_BUFFER_SIZE, position = 0;
