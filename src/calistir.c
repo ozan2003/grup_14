@@ -12,7 +12,7 @@ void calistir(char** args)
         return; // No command to run
     }
 
-    // Variables for tracking redirection, background, and pipes
+    // Variables for redirection, pipes, and background
     char* input_file    = NULL;
     char* output_file   = NULL;
     int   is_background = 0;
@@ -62,6 +62,27 @@ void execute_single_command(char** args,
                             char*  output_file,
                             int    is_background)
 {
+    // Check for the custom "increment" command
+    if (strcmp(args[0], "increment") == 0)
+    {
+        // Redirect input if necessary
+        if (input_file)
+        {
+            int fd = open(input_file, O_RDONLY);
+            if (fd < 0)
+            {
+                perror("Input file error");
+                return;
+            }
+            dup2(fd, STDIN_FILENO);
+            close(fd);
+        }
+
+        // Call the increment function
+        _increment(args);
+        return;
+    }
+
     pid_t pid = fork();
     if (pid == 0)
     { // Child process
@@ -146,7 +167,7 @@ void execute_pipeline(char** args,
         pid = fork();
         if (pid == 0)
         { // Child process
-            // Handle input redirection for the first command
+            // Redirect input from previous pipe or input file
             if (input_fd != STDIN_FILENO)
             {
                 dup2(input_fd, STDIN_FILENO);
@@ -164,8 +185,14 @@ void execute_pipeline(char** args,
                 close(fd);
             }
 
-            // Handle output redirection for the last command
-            if (args[cmd_index] == NULL && output_file)
+            // Handle output to the next pipe or final output
+            if (args[cmd_index] != NULL)
+            {
+                dup2(pipes[cmd_index % 2][1], STDOUT_FILENO);
+                close(pipes[cmd_index % 2][0]);
+                close(pipes[cmd_index % 2][1]);
+            }
+            else if (output_file)
             {
                 int fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                 if (fd < 0)
@@ -176,11 +203,12 @@ void execute_pipeline(char** args,
                 dup2(fd, STDOUT_FILENO);
                 close(fd);
             }
-            else if (args[cmd_index] != NULL)
+
+            // Check for the custom "increment" command
+            if (strcmp(current_cmd[0], "increment") == 0)
             {
-                dup2(pipes[cmd_index % 2][1], STDOUT_FILENO);
-                close(pipes[cmd_index % 2][0]);
-                close(pipes[cmd_index % 2][1]);
+                _increment(current_cmd);
+                exit(EXIT_SUCCESS);
             }
 
             execvp(current_cmd[0], current_cmd);
