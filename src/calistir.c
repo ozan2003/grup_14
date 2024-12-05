@@ -1,4 +1,9 @@
 #include "../include/calistir.h"
+#include "../include/split_commands.h"
+
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 void execute_single_command(char** args,
                             char*  input_file,
@@ -15,11 +20,11 @@ void execute_pipeline(char** args,
  * Tekli komutları, pipe'ları ve redirection'lardan sorumludur.
  * @param args Komut ve argümanlarını içeren dizi.
  */
-void calistir(char** args)
+int calistir(char** args)
 {
     if (args == NULL || args[0] == NULL)
     {
-        return; // No command to run
+        return 0; // No command to run
     }
 
     // Variables for redirection, pipes, and background
@@ -65,6 +70,7 @@ void calistir(char** args)
                          output_file,
                          is_background);
     }
+return 1;
 }
 
 void execute_single_command(char** args,

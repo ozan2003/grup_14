@@ -1,60 +1,50 @@
-#include "../include/utils/read_line.h"
+#include "../include/utils/split_whitespace.h"
 
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 /**
- * @brief Bir satır okur ve döndürür.
- * @return Okunan satır.
+ * @brief String'i boşluklara göre ayırır ve döndürür.
+ * @param line Ayırılacak string.
+ * @return Boşluklara göre ayrılmış string dizisi.
  *
  * @warning Bu fonksiyon, bellek yönetimi için malloc ve realloc fonksiyonlarını
  * kullanır. Bu nedenle, kullanılan belleği serbest bırakmak için free
  * fonksiyonunu kullanmayı unutmayın.
  */
-char* read_line(void)
-{
-    int   bufsize  = BUFFER_SIZE;
-    int   position = 0;
-    char* buffer   = malloc(sizeof(char) * bufsize);
-    char  ch;
 
-    if (!buffer)
+char** split_whitespace(char* line)
+{
+    int    bufsize = TOKEN_BUFFER_SIZE, position = 0;
+    char** tokens = malloc((bufsize) * sizeof(char*));
+    char * token, **tokens_backup;
+
+    if (!tokens)
     {
         fprintf(stderr, "allocation error\n");
         exit(EXIT_FAILURE);
     }
 
-    while (true)
+    token = strtok(line, TOKEN_DELIMITERS);
+    while (token != NULL)
     {
-        // Read a character
-        ch = getchar();
-
-        // If we hit EOF, replace it with a null character and return.
-        if (ch == EOF || ch == '\n')
-        {
-            buffer[position] = '\0';
-            return buffer;
-        }
-        else
-        {
-            buffer[position] = ch;
-        }
+        tokens[position] = token;
         position++;
 
-        // If we have exceeded the buffer, reallocate.
         if (position >= bufsize)
         {
-            bufsize += BUFFER_SIZE;
-            buffer = realloc(buffer, bufsize);
-            if (!buffer)
+            bufsize += TOKEN_BUFFER_SIZE;
+            tokens_backup = tokens;
+            tokens        = realloc(tokens, bufsize * sizeof(char*));
+            if (!tokens)
             {
+                free(tokens_backup);
                 fprintf(stderr, "allocation error\n");
                 exit(EXIT_FAILURE);
             }
         }
-    }
 
-    return buffer;
+        token = strtok(NULL, TOKEN_DELIMITERS);
+    }
+    tokens[position] = NULL;
+    return tokens;
 }

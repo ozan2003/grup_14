@@ -1,37 +1,59 @@
 #include "../include/dongu.h"
 #include "../include/calistir.h"
+#include "../include/split_commands.h"
 
 /**
  * @brief Programın çalışmasını sağlayan döngüyü başlatır.
  */
 void dongu(void)
 {
-    char*  line;
-    char** args;
-    int    status = 1; // Initialize status to run the loop
+    char *line = NULL;
+    char **commands = NULL;
+    char **args = NULL;
+    int status = 1;
 
-    do
-    {
+    do {
         printf(PROMPT);
         fflush(stdout);
 
-        // Read and parse the input line
         line = read_line();
-        args = split_whitespace(line);
-
-        // Check for the "quit" command
-        if (args[0] != NULL && strcmp(args[0], "quit") == 0)
-        {
-            status = 0; // Set status to 0 to exit the loop
-        }
-        else
-        {
-            // Run the command
-            calistir(args);
+        if (!line) {
+            fprintf(stderr, "Error reading line\n");
+            break;
         }
 
-        // Free allocated memory
+        commands = split_commands(line);
+        if (!commands) {
+            free(line);
+            fprintf(stderr, "Error splitting commands\n");
+            break;
+        }
+
+        for (int i = 0; commands[i] != NULL; i++) {
+            args = split_whitespace(commands[i]);
+            if (!args) {
+                fprintf(stderr, "Error splitting command\n");
+                continue;
+            }
+
+            if (args[0] != NULL && strcmp(args[0], "increment") == 0) {
+                if (_increment(args) != 0) {
+                    status = 0;
+                    free(args);
+                    break;
+                }
+            } else if (args[0] != NULL && strcmp(args[0], "quit") == 0) {
+                status = 0;
+                free(args);
+                break;
+            } else {
+                calistir(args);
+            }
+
+            free(args);
+        }
+
         free(line);
-        free(args);
-    } while (status); // Loop while status is 1
+        free(commands);
+    } while (status);
 }

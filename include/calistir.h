@@ -16,7 +16,7 @@
  * Tekli komutları, pipe'ları ve redirection'lardan sorumludur.
  * @param args Komut ve argümanlarını içeren dizi.
  */
-void calistir(char** args);
+int calistir(char** args);
 
 
 #endif // CALISTIR_H
