@@ -6,6 +6,7 @@
 #define INCREMENT_H
 
 #include <stdio.h>
+#include <stdlib.h>
 
 int _increment(char** args);
 
