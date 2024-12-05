@@ -7,208 +7,204 @@
  */
 void calistir(char** args)
 {
-    // Check if command is empty
     if (args == NULL || args[0] == NULL)
     {
-        return;
+        return; // No command to run
     }
 
-    // Variables for tracking redirections and pipes
-    int input_redirect  = 0;
-    int output_redirect = 0;
-    int is_background   = 0;
-    int has_pipes       = 0;
+    // Variables for tracking redirection, background, and pipes
+    char* input_file    = NULL;
+    char* output_file   = NULL;
+    int   is_background = 0;
+    int   num_pipes     = 0;
 
-    // Temporary storage for input/output filenames
-    char* input_file  = NULL;
-    char* output_file = NULL;
-
-    // Scan arguments to detect special cases
+    // Parse arguments for redirection, pipes, and background
     for (int i = 0; args[i] != NULL; i++)
     {
-        if (strcmp(args[i], "<") == 0)
+        if (strcmp(args[i], "<") == 0 && args[i + 1] != NULL)
         {
-            input_redirect = 1;
-            if (args[i + 1] != NULL)
-            {
-                input_file = args[i + 1];
-                // Remove redirection markers from args
-                args[i]     = NULL;
-                args[i + 1] = NULL;
-            }
+            input_file = args[i + 1];
+            args[i]    = NULL;
         }
-        if (strcmp(args[i], ">") == 0)
+        else if (strcmp(args[i], ">") == 0 && args[i + 1] != NULL)
         {
-            output_redirect = 1;
-            if (args[i + 1] != NULL)
-            {
-                output_file = args[i + 1];
-                // Remove redirection markers from args
-                args[i]     = NULL;
-                args[i + 1] = NULL;
-            }
+            output_file = args[i + 1];
+            args[i]     = NULL;
         }
-        if (strcmp(args[i], "|") != 0)
-        {
-            has_pipes = 1;
-        }
-        if (strcmp(args[i], "&") == 0)
+        else if (strcmp(args[i], "&") == 0)
         {
             is_background = 1;
-            args[i]       = NULL; // Remove & from arguments
+            args[i]       = NULL;
         }
-    }
-
-    // Create pipe array for multiple commands
-    int pipes[2][2];
-    int num_pipes = 0;
-
-    // Count number of pipes
-    for (int i = 0; args[i] != NULL; i++)
-    {
-        if (strcmp(args[i], "|") == 0)
+        else if (strcmp(args[i], "|") == 0)
         {
             num_pipes++;
         }
     }
 
-    // Handling no pipes scenario
+    // Single command or pipeline handling
     if (num_pipes == 0)
     {
-        pid_t pid = fork();
-        if (pid == 0)
-        { // Child process
-            // Handle input redirection
-            if (input_redirect)
-            {
-                int input_fd = open(input_file, O_RDONLY);
-                if (input_fd == -1)
-                {
-                    perror("Giriş dosyası bulunamadı");
-                    exit(EXIT_FAILURE);
-                }
-                dup2(input_fd, STDIN_FILENO);
-                close(input_fd);
-            }
+        execute_single_command(args, input_file, output_file, is_background);
+    }
+    else
+    {
+        execute_pipeline(args,
+                         num_pipes,
+                         input_file,
+                         output_file,
+                         is_background);
+    }
+}
 
-            // Handle output redirection
-            if (output_redirect)
-            {
-                int output_fd =
-                    open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                if (output_fd == -1)
-                {
-                    perror("Çıkış dosyası hatası");
-                    exit(EXIT_FAILURE);
-                }
-                dup2(output_fd, STDOUT_FILENO);
-                close(output_fd);
-            }
-
-            // Execute command
-            execvp(args[0], args);
-            perror("Komut çalıştırılamadı");
-            exit(EXIT_FAILURE);
-        }
-        else if (pid < 0)
+void execute_single_command(char** args,
+                            char*  input_file,
+                            char*  output_file,
+                            int    is_background)
+{
+    pid_t pid = fork();
+    if (pid == 0)
+    { // Child process
+        // Handle input redirection
+        if (input_file)
         {
-            perror("Fork hatası");
-            return;
+            int fd = open(input_file, O_RDONLY);
+            if (fd < 0)
+            {
+                perror("Input file error");
+                exit(EXIT_FAILURE);
+            }
+            dup2(fd, STDIN_FILENO);
+            close(fd);
         }
 
+        // Handle output redirection
+        if (output_file)
+        {
+            int fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            if (fd < 0)
+            {
+                perror("Output file error");
+                exit(EXIT_FAILURE);
+            }
+            dup2(fd, STDOUT_FILENO);
+            close(fd);
+        }
+
+        // Execute the command
+        execvp(args[0], args);
+        perror("Execution failed");
+        exit(EXIT_FAILURE);
+    }
+    else if (pid < 0)
+    {
+        perror("Fork error");
+    }
+    else
+    {
         // Parent process
         if (!is_background)
         {
-            waitpid(pid, NULL, 0);
+            waitpid(pid, NULL, 0); // Wait for child process
         }
-        return;
     }
+}
 
-    // Pipe handling (complex scenario)
-    pid_t pid;
+void execute_pipeline(char** args,
+                      int    num_pipes,
+                      char*  input_file,
+                      char*  output_file,
+                      int    is_background)
+{
+    int   pipes[2][2];
     int   input_fd = STDIN_FILENO;
+    pid_t pid;
+    int   cmd_index = 0;
 
-    // Scan and split commands by pipes
-    char** current_cmd = args;
-    int    pipe_index  = 0;
-
-    while (current_cmd != NULL)
+    while (args[cmd_index] != NULL)
     {
-        // Find next command or end
-        char** next_cmd = NULL;
-        for (int i = 0; current_cmd[i] != NULL; i++)
+        // Find the next command
+        char* current_cmd[128];
+        int   i = 0;
+        while (args[cmd_index] != NULL && strcmp(args[cmd_index], "|") != 0)
         {
-            if (strcmp(current_cmd[i], "|") == 0)
-            {
-                current_cmd[i] = NULL; // Terminate current command
-                next_cmd       = &current_cmd[i + 1];
-                break;
-            }
+            current_cmd[i++] = args[cmd_index++];
         }
+        current_cmd[i] = NULL;
 
-        // Create pipe for command chain
-        if (next_cmd != NULL)
+        // Skip the pipe symbol
+        if (args[cmd_index] != NULL)
+            cmd_index++;
+
+        // Create a pipe if needed
+        if (args[cmd_index] != NULL && pipe(pipes[cmd_index % 2]) < 0)
         {
-            if (pipe(pipes[pipe_index % 2]) == -1)
-            {
-                perror("Pipe oluşturma hatası");
-                return;
-            }
+            perror("Pipe creation error");
+            return;
         }
 
         pid = fork();
         if (pid == 0)
         { // Child process
-            // Redirect input if not first command
+            // Handle input redirection for the first command
             if (input_fd != STDIN_FILENO)
             {
                 dup2(input_fd, STDIN_FILENO);
                 close(input_fd);
             }
-
-            // Redirect output to next pipe or final output
-            if (next_cmd != NULL)
+            else if (input_file)
             {
-                dup2(pipes[pipe_index % 2][1], STDOUT_FILENO);
-                close(pipes[pipe_index % 2][0]);
-                close(pipes[pipe_index % 2][1]);
-            }
-            else if (output_redirect)
-            {
-                int output_fd =
-                    open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                dup2(output_fd, STDOUT_FILENO);
-                close(output_fd);
+                int fd = open(input_file, O_RDONLY);
+                if (fd < 0)
+                {
+                    perror("Input file error");
+                    exit(EXIT_FAILURE);
+                }
+                dup2(fd, STDIN_FILENO);
+                close(fd);
             }
 
-            // Execute command
+            // Handle output redirection for the last command
+            if (args[cmd_index] == NULL && output_file)
+            {
+                int fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (fd < 0)
+                {
+                    perror("Output file error");
+                    exit(EXIT_FAILURE);
+                }
+                dup2(fd, STDOUT_FILENO);
+                close(fd);
+            }
+            else if (args[cmd_index] != NULL)
+            {
+                dup2(pipes[cmd_index % 2][1], STDOUT_FILENO);
+                close(pipes[cmd_index % 2][0]);
+                close(pipes[cmd_index % 2][1]);
+            }
+
             execvp(current_cmd[0], current_cmd);
-            perror("Komut çalıştırılamadı");
+            perror("Execution failed");
             exit(EXIT_FAILURE);
         }
         else if (pid < 0)
         {
-            perror("Fork hatası");
+            perror("Fork error");
             return;
         }
 
-        // Parent process
+        // Parent process: Close pipes and update input_fd
         if (input_fd != STDIN_FILENO)
         {
             close(input_fd);
         }
-
-        if (next_cmd != NULL)
+        if (args[cmd_index] != NULL)
         {
-            input_fd = pipes[pipe_index % 2][0];
-            close(pipes[pipe_index % 2][1]);
-            pipe_index++;
+            input_fd = pipes[cmd_index % 2][0];
+            close(pipes[cmd_index % 2][1]);
         }
-
-        current_cmd = next_cmd;
     }
 
-    // Wait for all child processes if not background
     if (!is_background)
     {
         while (wait(NULL) > 0)
