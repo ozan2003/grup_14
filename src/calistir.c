@@ -1,5 +1,15 @@
 #include "../include/calistir.h"
 
+void execute_single_command(char** args,
+                            char*  input_file,
+                            char*  output_file,
+                            int    is_background);
+
+void execute_pipeline(char** args,
+                      char*  input_file,
+                      char*  output_file,
+                      int    is_background);
+
 /**
  * @brief Kullanıcının girdiği komutu çalıştırır.
  * Tekli komutları, pipe'ları ve redirection'lardan sorumludur.
