@@ -60,7 +60,7 @@ void calistir(char** args)
     else
     {
         execute_pipeline(args,
-                         num_pipes,
+                         //num_pipes,
                          input_file,
                          output_file,
                          is_background);
@@ -142,7 +142,7 @@ void execute_single_command(char** args,
 }
 
 void execute_pipeline(char** args,
-                      int    num_pipes,
+                      //int    num_pipes,
                       char*  input_file,
                       char*  output_file,
                       int    is_background)
