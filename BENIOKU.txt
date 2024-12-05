@@ -1,0 +1,5 @@
+make komutları:
+
+- all: .c dosyalarını derler ve bağlar.
+- clean: .o dosyalarını ve derlenmiş programı siler.
+- run: derlenmiş programı çalıştırır.
