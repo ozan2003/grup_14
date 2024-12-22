@@ -2,7 +2,7 @@
 
 2024-2025 İşletim Sistemlari Güz Dönemi Projesidir.
 
-## Grup Üyeleri
+## Grup Üyeleri (14. Grup)
 
 - Eren Çoban - G221210090
 - Onur Eğrikılıç - G221210066
