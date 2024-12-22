@@ -12,62 +12,66 @@
 #include <string.h>
 #include "../include/builtins/increment.h"
 
-/**
- * @brief Aldığı sayıyı 1 arttıran fonksiyon.
- * @param args Komut ve argümanlarını içeren dizi.
- * @return 0: Başarıyla tamamlandı, -1: Hata.
- */
-int _increment(char **args) {
+ /**
+  * @brief Aldığı sayıyı 1 arttıran fonksiyon.
+  * @param args Komut ve argümanlarını içeren dizi.
+  * @return 0: Başarıyla tamamlandı, -1: Hata.
+  */
+int _increment(char** args) {
     int num = 0;
-    char buffer[256] = {0};
-    FILE *file = NULL;
+    char buffer[256] = { 0 };
+    FILE* file = NULL;
 
-    // Case 1: Argument provided directly
+    // Durum 1: Argüman doğrudan sağlanmış
     if (args[1] != NULL) {
-        // Check if it's a file redirection
+        // Dosya yönlendirmesi olup olmadığını kontrol et
         if (strcmp(args[1], "<") == 0 && args[2] != NULL) {
             file = fopen(args[2], "r");
             if (!file) {
-                fprintf(stderr, "Error opening file: %s\n", args[2]);
+                fprintf(stderr, "Dosya açma hatası: %s\n", args[2]);
                 return -1;
             }
-            
-            // Read first line from file
+
+            // Dosyadan ilk satırı oku
             if (fgets(buffer, sizeof(buffer), file) != NULL) {
-                // Remove newline characters
+                // Yeni satır karakterlerini kaldır
                 buffer[strcspn(buffer, "\r\n")] = '\0';
                 num = atoi(buffer);
                 fclose(file);
-            } else {
-                fprintf(stderr, "Error reading file or empty file\n");
+            }
+            else {
+                fprintf(stderr, "Dosya okuma hatası veya dosya boş\n");
                 fclose(file);
                 return -1;
             }
-        } else {
-            // Direct number argument
+        }
+        else {
+            // Doğrudan sayı argümanı
             num = atoi(args[1]);
         }
-    } 
-    // Case 2: No argument, read from stdin
+    }
+    // Durum 2: Argüman yok, stdin'den oku
     else {
         if (fgets(buffer, sizeof(buffer), stdin) != NULL) {
             buffer[strcspn(buffer, "\r\n")] = '\0';
             num = atoi(buffer);
-        } else if (feof(stdin)) {
+        }
+        else if (feof(stdin)) {
             return 0;
-        } else {
-            fprintf(stderr, "Error reading input\n");
+        }
+        else {
+            fprintf(stderr, "Girdi okuma hatası\n");
             return -1;
         }
     }
 
-    // Validate input
+    // Girdi doğrulama
     if (num == 0 && buffer[0] != '0') {
-        fprintf(stderr, "Invalid input: %s\n", buffer);
+        fprintf(stderr, "Geçersiz girdi: %s\n", buffer);
         return -1;
     }
 
-    // Print incremented number
+    // Arttırılmış sayıyı yazdır
     printf("%d\n", num + 1);
     return 0;
 }

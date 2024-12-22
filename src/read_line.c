@@ -13,33 +13,33 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-/**
- * @brief Bir satır okur ve döndürür.
- * @return Okunan satır.
- *
- * @warning Bu fonksiyon, bellek yönetimi için malloc ve realloc fonksiyonlarını
- * kullanır. Bu nedenle, kullanılan belleği serbest bırakmak için free
- * fonksiyonunu kullanmayı unutmayın.
- */
+ /**
+  * @brief Bir satır okur ve döndürür.
+  * @return Okunan satır.
+  *
+  * @warning Bu fonksiyon, bellek yönetimi için malloc ve realloc fonksiyonlarını
+  * kullanır. Bu nedenle, kullanılan belleği serbest bırakmak için free
+  * fonksiyonunu kullanmayı unutmayın.
+  */
 char* read_line(void)
 {
-    int   bufsize  = BUFFER_SIZE;
+    int   bufsize = BUFFER_SIZE;
     int   position = 0;
-    char* buffer   = malloc(sizeof(char) * bufsize);
+    char* buffer = malloc(sizeof(char) * bufsize);
     char  ch;
 
     if (!buffer)
     {
-        fprintf(stderr, "allocation error\n");
+        fprintf(stderr, "bellek ayırma hatası\n");
         exit(EXIT_FAILURE);
     }
 
     while (true)
     {
-        // Read a character
+        // Bir karakter oku
         ch = getchar();
 
-        // If we hit EOF, replace it with a null character and return.
+        // EOF'ye ulaşırsak, bunu bir null karakterle değiştir ve döndür.
         if (ch == EOF || ch == '\n')
         {
             buffer[position] = '\0';
@@ -51,14 +51,14 @@ char* read_line(void)
         }
         position++;
 
-        // If we have exceeded the buffer, reallocate.
+        // Eğer tamponu aşarsak, yeniden tahsis et.
         if (position >= bufsize)
         {
             bufsize += BUFFER_SIZE;
             buffer = realloc(buffer, bufsize);
             if (!buffer)
             {
-                fprintf(stderr, "allocation error\n");
+                fprintf(stderr, "bellek ayırma hatası\n");
                 exit(EXIT_FAILURE);
             }
         }

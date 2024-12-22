@@ -14,51 +14,65 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+ /**
+  * @brief Tek bir komutu çalıştırır.
+  * @param args Komut ve argümanlarını içeren dizi.
+  * @param input_file Girdi dosyasının adı.
+  * @param output_file Çıktı dosyasının adı.
+  * @param is_background Arka planda çalışıp çalışmayacağını belirten bayrak.
+  */
 void execute_single_command(char** args,
-                            char*  input_file,
-                            char*  output_file,
-                            int    is_background);
+    char* input_file,
+    char* output_file,
+    int    is_background);
 
+/**
+ * @brief Pipe'lı komutları çalıştırır.
+ * @param args Komut ve argümanlarını içeren dizi.
+ * @param input_file Girdi dosyasının adı.
+ * @param output_file Çıktı dosyasının adı.
+ * @param is_background Arka planda çalışıp çalışmayacağını belirten bayrak.
+ */
 void execute_pipeline(char** args,
-                      char*  input_file,
-                      char*  output_file,
-                      int    is_background);
+    char* input_file,
+    char* output_file,
+    int    is_background);
 
 /**
  * @brief Kullanıcının girdiği komutu çalıştırır.
- * Tekli komutları, pipe'ları ve redirection'lardan sorumludur.
+ * Tekli komutları, pipe'ları ve yönlendirmelerden sorumludur.
  * @param args Komut ve argümanlarını içeren dizi.
  */
 int calistir(char** args)
 {
     if (args == NULL || args[0] == NULL)
     {
-        return 0; // No command to run
+        return 0; // Çalıştırılacak komut yok
     }
 
-    // Variables for redirection, pipes, and background
-    char* input_file    = NULL;
-    char* output_file   = NULL;
+    // Yönlendirme, pipe ve arka plan için değişkenler
+    char* input_file = NULL;
+    char* output_file = NULL;
     int   is_background = 0;
-    int   num_pipes     = 0;
+    int   num_pipes = 0;
 
-    // Parse arguments for redirection, pipes, and background
+    // Yönlendirme, pipe ve arka plan için argümanları ayrıştır
     for (int i = 0; args[i] != NULL; i++)
     {
         if (strcmp(args[i], "<") == 0 && args[i + 1] != NULL)
         {
             input_file = args[i + 1];
-            args[i]    = NULL;
+            args[i] = NULL;
         }
         else if (strcmp(args[i], ">") == 0 && args[i + 1] != NULL)
         {
             output_file = args[i + 1];
-            args[i]     = NULL;
+            args[i] = NULL;
         }
         else if (strcmp(args[i], "&") == 0)
         {
             is_background = 1;
-            args[i]       = NULL;
+            args[i] = NULL;
         }
         else if (strcmp(args[i], "|") == 0)
         {
@@ -66,101 +80,102 @@ int calistir(char** args)
         }
     }
 
-    // Single command or pipeline handling
+    // Tekli komut ya da pipe işlemine göre çağrı yap
     if (num_pipes == 0)
     {
         execute_single_command(args, input_file, output_file, is_background);
     }
     else
     {
-        execute_pipeline(args,
-                         //num_pipes,
-                         input_file,
-                         output_file,
-                         is_background);
+        execute_pipeline(args, input_file, output_file, is_background);
     }
-return 1;
+    return 1;
 }
 
+/**
+ * @brief Tek bir komutu çalıştırır.
+ */
 void execute_single_command(char** args,
-                            char*  input_file,
-                            char*  output_file,
-                            int    is_background)
+    char* input_file,
+    char* output_file,
+    int    is_background)
 {
-    // Check for the custom "increment" command
+    // Özel "increment" komutunu kontrol et
     if (strcmp(args[0], "increment") == 0)
     {
-        // Redirect input if necessary
+        // Gerekirse girdiyi yönlendir
         if (input_file)
         {
             int fd = open(input_file, O_RDONLY);
             if (fd < 0)
             {
-                perror("Input file error");
+                perror("Girdi dosyası hatası");
                 return;
             }
             dup2(fd, STDIN_FILENO);
             close(fd);
         }
 
-        // Call the increment function
+        // Increment fonksiyonunu çağır
         _increment(args);
         return;
     }
 
     pid_t pid = fork();
     if (pid == 0)
-    { // Child process
-        // Handle input redirection
+    { // Çocuk süreç
+        // Girdi yönlendirmesi
         if (input_file)
         {
             int fd = open(input_file, O_RDONLY);
             if (fd < 0)
             {
-                perror("Input file error");
+                perror("Girdi dosyası hatası");
                 exit(EXIT_FAILURE);
             }
             dup2(fd, STDIN_FILENO);
             close(fd);
         }
 
-        // Handle output redirection
+        // Çıktı yönlendirmesi
         if (output_file)
         {
             int fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (fd < 0)
             {
-                perror("Output file error");
+                perror("Çıktı dosyası hatası");
                 exit(EXIT_FAILURE);
             }
             dup2(fd, STDOUT_FILENO);
             close(fd);
         }
 
-        // Execute the command
+        // Komutu çalıştır
         execvp(args[0], args);
-        perror("Execution failed");
+        perror("Çalıştırma başarısız");
         exit(EXIT_FAILURE);
     }
     else if (pid < 0)
     {
-        perror("Fork error");
+        perror("Fork hatası");
     }
     else
     {
-        // Parent process
+        // Ana süreç
         if (!is_background)
         {
-            waitpid(pid, NULL, 0); // Wait for child process
+            waitpid(pid, NULL, 0); // Çocuk süreci bekle
         }
     }
 }
 
+/**
+ * @brief Pipe'lı komutları çalıştırır.
+ */
 void execute_pipeline(char** args,
-                      //int    num_pipes,
-                      char*  input_file,
-                      char*  output_file,
-                      int    is_background)
+    char* input_file,
+    char* output_file,
+    int    is_background)
 {
     int   pipes[2][2];
     int   input_fd = STDIN_FILENO;
@@ -169,7 +184,7 @@ void execute_pipeline(char** args,
 
     while (args[cmd_index] != NULL)
     {
-        // Find the next command
+        // Bir sonraki komutu bul
         char* current_cmd[128];
         int   i = 0;
         while (args[cmd_index] != NULL && strcmp(args[cmd_index], "|") != 0)
@@ -178,21 +193,21 @@ void execute_pipeline(char** args,
         }
         current_cmd[i] = NULL;
 
-        // Skip the pipe symbol
+        // Pipe sembolünü atla
         if (args[cmd_index] != NULL)
             cmd_index++;
 
-        // Create a pipe if needed
+        // Gerekirse bir pipe oluştur
         if (args[cmd_index] != NULL && pipe(pipes[cmd_index % 2]) < 0)
         {
-            perror("Pipe creation error");
+            perror("Pipe oluşturma hatası");
             return;
         }
 
         pid = fork();
         if (pid == 0)
-        { // Child process
-            // Redirect input from previous pipe or input file
+        { // Çocuk süreç
+            // Önceki pipe'tan ya da girdi dosyasından yönlendir
             if (input_fd != STDIN_FILENO)
             {
                 dup2(input_fd, STDIN_FILENO);
@@ -203,14 +218,14 @@ void execute_pipeline(char** args,
                 int fd = open(input_file, O_RDONLY);
                 if (fd < 0)
                 {
-                    perror("Input file error");
+                    perror("Girdi dosyası hatası");
                     exit(EXIT_FAILURE);
                 }
                 dup2(fd, STDIN_FILENO);
                 close(fd);
             }
 
-            // Handle output to the next pipe or final output
+            // Çıktıyı bir sonraki pipe'a ya da son çıktıya yönlendir
             if (args[cmd_index] != NULL)
             {
                 dup2(pipes[cmd_index % 2][1], STDOUT_FILENO);
@@ -222,14 +237,14 @@ void execute_pipeline(char** args,
                 int fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                 if (fd < 0)
                 {
-                    perror("Output file error");
+                    perror("Çıktı dosyası hatası");
                     exit(EXIT_FAILURE);
                 }
                 dup2(fd, STDOUT_FILENO);
                 close(fd);
             }
 
-            // Check for the custom "increment" command
+            // Özel "increment" komutunu kontrol et
             if (strcmp(current_cmd[0], "increment") == 0)
             {
                 _increment(current_cmd);
@@ -237,16 +252,16 @@ void execute_pipeline(char** args,
             }
 
             execvp(current_cmd[0], current_cmd);
-            perror("Execution failed");
+            perror("Çalıştırma başarısız");
             exit(EXIT_FAILURE);
         }
         else if (pid < 0)
         {
-            perror("Fork error");
+            perror("Fork hatası");
             return;
         }
 
-        // Parent process: Close pipes and update input_fd
+        // Ana süreç: Pipe'ları kapat ve input_fd'yi güncelle
         if (input_fd != STDIN_FILENO)
         {
             close(input_fd);
