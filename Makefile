@@ -1,3 +1,10 @@
+# Grup üyeleri:
+# - Eren Çoban - G221210090
+# - Onur Eğrikılıç - G221210066
+# - Ozan Malcı - B211210039
+# - Semih Öztürk - G221210003
+# - Yiğit Talha Adagülü - G221210093
+
 CC := gcc
 CCFLAGS := -g -std=c99 -Wall -Wextra -Wshadow -pedantic
 # These folders must be present.
