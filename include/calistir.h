@@ -13,7 +13,7 @@
 #include <stdio.h>    // Standart giriş/çıkış
 #include <stdlib.h>   // Standart kütüphane fonksiyonları (exit, malloc, vb.)
 #include <string.h>   // String manipülasyon fonksiyonları
-#include <sys/wait.h> // Süreç sonlandırma bekleme
+#include <sys/wait.h> // Süreç sonlandırma bekleme..
 #include <unistd.h>   // POSIX işletim sistemi API'si (fork, exec, pipe)
 #include <signal.h>   // Sinyal işleme fonksiyonları
 
