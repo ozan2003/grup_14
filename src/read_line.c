@@ -14,29 +14,28 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-/**
- * @brief Kullanıcıdan bir satır girdi alır ve string olarak döner.
- *
- * Bu fonksiyon, standart girdiden karakter karakter okuyarak tam bir satırı alır.
- * Bellek yönetimi malloc ve realloc ile yapılır. Girdi boyutu tamponu aştığında
- * bellek otomatik olarak genişletilir.
- *
- * @return char* Kullanıcıdan alınan satırı döner. NULL karakter ile sonlandırılmıştır.
- * @warning Dönen stringi serbest bırakmak için free() kullanmayı unutmayın.
- */
+ /**
+  * @brief Standart girdiden bir satır okuyup geri döndüren fonksiyon.
+  *
+  * Bu fonksiyon, karakter karakter okuyarak standart girdiden tam bir satır alır.
+  * Girdi boyutunun tamponu aştığı durumlarda bellek realloc ile otomatik olarak artırılır.
+  *
+  * @return char* Okunan tam satırı içeren bir string döner. Sonunda NULL karakteri bulunur.
+  * @warning Dönen string belleğin free() ile temizlenmesi gereklidir.
+  */
 char* read_line(void)
 {
-    // Tampon boyutu ve pozisyonu tanımla
-    int   bufsize = BUFFER_SIZE; // İlk tampon boyutu
-    int   position = 0;         // Yazılacak pozisyon
-    char* buffer = malloc(sizeof(char) * bufsize); // Tampon için bellek tahsisi
-    char  ch;                  // Okunan karakter
+    // Tampon boyutunu ve okuma pozisyonunu belirle
+    int   bufsize = BUFFER_SIZE; // Başlangıçta tahsis edilen tampon boyutu
+    int   position = 0;         // Tampona yazılacak pozisyon
+    char* buffer = malloc(sizeof(char) * bufsize); // Tampon için dinamik bellek tahsisi
+    char  ch;                  // Okunan karakterin tutulduğu değişken
 
-    // Bellek tahsisi kontrolü
+    // Bellek tahsisi başarı kontrolü
     if (!buffer)
     {
-        fprintf(stderr, "Bellek ayırma hatası\n");
-        exit(EXIT_FAILURE); // Hata durumunda programı sonlandır
+        fprintf(stderr, "Bellek ayırılırken hata oluştu\n");
+        exit(EXIT_FAILURE); // Bellek ayırılamadıysa program sonlandırılır
     }
 
     while (true)
@@ -44,32 +43,32 @@ char* read_line(void)
         // Standart girdiden bir karakter oku
         ch = getchar();
 
-        // EOF (dosya sonu) veya yeni satır karakteriyle karşılaşırsak işlemi sonlandır
+        // Eğer EOF veya yeni satır karakteri geldiyse işlemi bitir
         if (ch == EOF || ch == '\n')
         {
-            buffer[position] = '\0'; // Sonuna null karakter ekle
-            return buffer; // Okunan satırı dön
+            buffer[position] = '\0'; // Stringi sonlandırmak için NULL karakteri ekle
+            return buffer; // Tamamlanan stringi geri dön
         }
         else
         {
-            buffer[position] = ch; // Karakteri tampona yaz
+            buffer[position] = ch; // Okunan karakteri tampona yaz
         }
         position++;
 
-        // Tampon boyutunu aşarsak belleği genişlet
+        // Tampon kapasitesi dolarsa daha fazla bellek tahsis et
         if (position >= bufsize)
         {
-            bufsize += BUFFER_SIZE; // Tampon boyutunu arttır
+            bufsize += BUFFER_SIZE; // Tampon boyutunu artır
             buffer = realloc(buffer, bufsize); // Belleği yeniden tahsis et
 
-            // Bellek tahsisi kontrolü
+            // Yeniden tahsis başarı kontrolü
             if (!buffer)
             {
-                fprintf(stderr, "Bellek ayırma hatası\n");
-                exit(EXIT_FAILURE); // Hata durumunda programı sonlandır
+                fprintf(stderr, "Bellek yeniden ayırılamadı\n");
+                exit(EXIT_FAILURE); // Yeniden tahsis hatasında program sonlandırılır
             }
         }
     }
 
-    return buffer; // Okunan stringi dön (bu satıra normal şartlarda ulaşılmaz)
+    return buffer; // Bu satır normal şartlarda işlenmez
 }

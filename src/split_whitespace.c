@@ -11,61 +11,63 @@
 
 #include <string.h>
 
-/**
- * @brief Bir stringi boşluklara göre ayırarak bir dizi şeklinde döndürür.
- *
- * @param line Ayırılacak string.
- * @return char** Boşluklara göre ayrılmış stringlerin dizisi.
- *
- * @warning Bu fonksiyon malloc ve realloc ile bellek tahsisi yapar. Ayrılan belleğin 
- * free fonksiyonu ile serbest bırakılması gerekir.
- */
+ /**
+  * @brief Verilen bir stringi boşluk karakterlerine göre parçalayıp bir dizi şeklinde geri döndüren fonksiyon.
+  *
+  * Bu fonksiyon, verilen stringi boşluklarla ayırarak her bir parçayı bir dizi elemanı olarak saklar.
+  * Girdi stringinde bulunan her bir kelime veya parça, diziye eklenir.
+  *
+  * @param line Parçalanacak string.
+  * @return char** Ayrıştırılmış kelimeleri veya parçaları içeren bir dizi döner.
+  * @warning Bu fonksiyon malloc ve realloc ile bellek tahsisi yapar. Ayrılan belleğin free() fonksiyonu ile
+  * serbest bırakılması gerekir.
+  */
 char** split_whitespace(char* line)
 {
-    // Token dizisi için tampon boyutu ve dizi üzerindeki pozisyonu tanımla
+    // Tampon boyutu ve dizi üzerindeki pozisyonu tanımla
     int    bufsize = TOKEN_BUFFER_SIZE, position = 0;
-    
-    // Ayrıştırılan stringleri tutmak için bellek tahsisi yap
+
+    // Ayrıştırılan stringleri tutacak dizi için bellek tahsisi
     char** tokens = malloc(bufsize * sizeof(char*));
-    char* token; // Geçici token değişkeni
-    char** tokens_backup; // Bellek yeniden tahsisi durumunda eski dizi için yedek
+    char* token; // Geçici değişken, bir kelimeyi saklar
+    char** tokens_backup; // Bellek tahsisinde hata durumunda eski dizi için yedek
 
     // Bellek tahsisi kontrolü
     if (!tokens)
     {
-        fprintf(stderr, "allocation error\n");
+        fprintf(stderr, "Bellek tahsisi hatası\n");
         exit(EXIT_FAILURE); // Hata durumunda program sonlandırılır
     }
 
-    // String'i boşluklara göre parçala (TOKEN_DELIMITERS ile ayrım)
+    // String'i boşluklara göre parçala (TOKEN_DELIMITERS kullanılır)
     token = strtok(line, TOKEN_DELIMITERS);
     while (token != NULL)
     {
-        // Ayrıştırılan token dizisine ekle
+        // Ayrıştırılan kelimeyi dizide sakla
         tokens[position] = token;
         position++;
 
-        // Dizi kapasitesi dolarsa tamponu genişlet
+        // Dizi kapasitesini kontrol et ve gerekirse genişlet
         if (position >= bufsize)
         {
-            bufsize += TOKEN_BUFFER_SIZE; // Tampon boyutunu arttır
+            bufsize += TOKEN_BUFFER_SIZE; // Tampon boyutunu artır
             tokens_backup = tokens; // Mevcut diziyi yedekle
-            tokens = realloc(tokens, bufsize * sizeof(char*)); // Bellek yeniden tahsis edilir
+            tokens = realloc(tokens, bufsize * sizeof(char*)); // Belleği genişlet
 
-            // Yeniden tahsis başarısızlığı durumunda eski belleği serbest bırak
+            // Bellek yeniden tahsis başarı kontrolü
             if (!tokens)
             {
-                free(tokens_backup);
-                fprintf(stderr, "allocation error\n");
-                exit(EXIT_FAILURE);
+                free(tokens_backup); // Eski belleği serbest bırak
+                fprintf(stderr, "Bellek tahsisi başarısız\n");
+                exit(EXIT_FAILURE); // Programı sonlandır
             }
         }
 
-        // Bir sonraki token'i al
+        // Sonraki kelimeyi al
         token = strtok(NULL, TOKEN_DELIMITERS);
     }
 
-    // Dizinin sonuna NULL ekle (sonlandırıcı)
+    // Diziye sonlandırıcı olarak NULL ekle
     tokens[position] = NULL;
-    return tokens; // Ayrıştırılmış string dizisini döner
+    return tokens; // Ayrıştırılmış string dizisini geri dön
 }

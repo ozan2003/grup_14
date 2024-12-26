@@ -11,74 +11,74 @@
 #include "../include/calistir.h"
 #include "../include/split_commands.h"
 
-/**
- * @brief Programın ana çalışma döngüsünü başlatır.
- * Kullanıcıdan girdi alır, komutları parçalar ve gerekli işlevleri çağırır.
- *
- * Bu döngü, kullanıcının komutlarını girmesine ve programı kontrol etmesine izin verir.
- * Komutlar, noktalı virgül (;) ile ayrılabilir ve ayrı komutlar olarak çalıştırılabilir.
- */
+ /**
+  * @brief Programın temel işlevini yürüten ana döngüyü başlatır.
+  * Kullanıcıdan girdi alarak bu girdişleri ayrıştırır ve uygun fonksiyonları çağırır.
+  *
+  * Bu döngü, kullanıcının komut girmesi ve programı kontrol etmesine olanak tanır.
+  * Komutlar, noktalı virgül (;) ile ayrılır ve ayrı ayrı işlenir.
+  */
 void dongu(void)
 {
-    // Kullanıcıdan gelen satır, komutlar ve argümanlar için tanımlar
-    char *line = NULL;        // Kullanıcıdan alınan girdi satırı
-    char **commands = NULL;   // Girdi satırından ayrıştırılmış komutlar dizisi
-    char **args = NULL;       // Her bir komutun ayrıştırılmış argümanları
-    int status = 1;           // Program döngüsü durumu (1: devam, 0: sonlandırma)
+    // Kullanıcıdan alınan girdiler ve ayrıştırılan bilgiler için değişkenler
+    char* line = NULL;        // Kullanıcıdan alınan girdi satırı
+    char** commands = NULL;   // Ayrıştırılmış komutlar dizisi
+    char** args = NULL;       // Komut argümanlarını tutacak dizi
+    int status = 1;           // Programın çalışma durumu (1: devam, 0: sonlanma)
 
     do {
-        // Kullanıcıdan komut istemi yazdır ve standart çıktıyı temizle
+        // Komut istemini yaz ve standart çıktıyı temizle
         printf(PROMPT);
         fflush(stdout);
 
-        // Kullanıcıdan bir satır okur
+        // Kullanıcıdan bir satır okuma
         line = read_line();
         if (!line) {
-            fprintf(stderr, "Error reading line\n");
-            break; // Satır okunamazsa döngü sonlandırılır
+            fprintf(stderr, "Satır okuma hatası\n");
+            break; // Satır okunamazsa döngü sonlanır
         }
 
         // Satırı noktalı virgüle (;) göre komutlara ayır
         commands = split_commands(line);
         if (!commands) {
-            free(line); // Bellek temizlenir
-            fprintf(stderr, "Error splitting commands\n");
+            free(line); // Hafıza temizlenir
+            fprintf(stderr, "Komutları ayırma hatası\n");
             break;
         }
 
-        // Ayrıştırılan her bir komut üzerinde dön
+        // Her komut için döngüye gir
         for (int i = 0; commands[i] != NULL; i++) {
-            // Komutun argümanlarını boşluklara göre ayır
+            // Komutun argümanlarını boşluklara göre ayrıştır
             args = split_whitespace(commands[i]);
             if (!args) {
-                fprintf(stderr, "Error splitting command\n");
-                continue; // Hatalı bir komut atlanır
+                fprintf(stderr, "Komut ayrıştırma hatası\n");
+                continue; // Hatalı komut atlanır
             }
 
-            // "increment" adlı özel komutu kontrol et ve çalıştır
+            // "increment" komutunu kontrol edip çalıştır
             if (args[0] != NULL && strcmp(args[0], "increment") == 0) {
-                if (_increment(args) != 0) { // Hata durumu kontrolü
-                    status = 0; // Programı sonlandırmak için durum değiştirilir
+                if (_increment(args) != 0) { // Hata durumunda kontrol
+                    status = 0; // Programı durdurmak için durum değiştir
                     free(args);
                     break;
                 }
             }
-            // "quit" komutunu kontrol et ve programı sonlandır
+            // "quit" komutunu kontrol ederek programı sonlandır
             else if (args[0] != NULL && strcmp(args[0], "quit") == 0) {
-                status = 0; // Döngü durumu değiştirilir
+                status = 0; // Durumu 0 yaparak döngüyü sonlandır
                 free(args);
                 break;
             }
             // Diğer komutları çalıştır
             else {
-                calistir(args); // Komut ve argümanları işle
+                calistir(args); // Komut ve parametreleri işle
             }
 
-            free(args); // Her komutun argümanlarının belleği serbest bırakılır
+            free(args); // Her komutun argümanlarının hafızasını temizle
         }
 
-        // Komut satırı ve komutlar dizisi için belleği temizle
+        // Satır ve komutların hafızasını serbest bırak
         free(line);
         free(commands);
-    } while (status); // Durum 0 olana kadar döngü devam eder
+    } while (status); // Durum 0 olmadığı sürece döngü devam eder
 }
